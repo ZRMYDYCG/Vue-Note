@@ -1073,9 +1073,94 @@ $--breakpoints-spec: (
 
 ### icon.scss
 
-继续跳转文件，看到了 icon.scss 
+继续跳转文件，看到了 icon.scss
 
 这里用来定义了 Element-ui 的基础图标
+
+这里需要重点读懂这里的两段代码
+
+一、
+
+```css
+@font-face {
+  font-family: 'element-icons';
+  src: url('#{$--font-path}/element-icons.woff') format('woff'), /* chrome, firefox */
+       url('#{$--font-path}/element-icons.ttf') format('truetype'); /* chrome, firefox, opera, Safari, Android, iOS 4.2+*/
+  font-weight: normal;
+  font-display: $--font-display;
+  font-style: normal;
+}
+```
+
+1. @font-face 是CSS中的一个规则，用来定义网页中使用的字体。通过这个规则，就可以引入在线字体或者本地字体文件，让网页显示特殊的字体样式。
+
+2. font-family: 'element-icons'; 这一行设置了字体的名称，这里命名为element-icons。当你在CSS中引用这个字体时，就会使用这个名称。
+
+3. src: url('#{$--font-path}/element-icons.woff') format('woff'), 这里指定了字体文件的路径和格式。url函数用于引入字体文件，#{$--font-path}是一个变量，它包含了字体文件存放的路径。element-icons.woff是字体文件的名称，**woff是它的格式**，这种格式的字体文件在多数现代浏览器中都有很好的支持。
+
+4. format('truetype') 这一部分是注释，说明接下来的字体格式是truetype，这种格式的字体文件在多个浏览器和操作系统中都得到了支持。
+
+5. url('#{$--font-path}/element-icons.ttf') format('truetype'); 这一行同样使用url函数引入了另一种格式的字体文件，element-icons.ttf。truetype是ttf字体文件的格式，它同样被广泛支持。
+
+6. font-weight: normal; 这里设置了字体的粗细程度，normal表示正常粗细，这是字体的默认设置。
+
+7. font-display: $--font-display; 这一行通过变量$--font-display来控制字体文件如何被加载和显示。这个变量的值可以是auto、block或fallback，用来优化字体加载的性能和用户体验。
+
+8. font-style: normal; 最后这一行设置了字体的风格，normal表示正常风格，没有斜体或粗体效果。
+
+二、
+
+```css
+[class^="el-icon-"], [class*=" el-icon-"] {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  font-family: 'element-icons' !important;
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  vertical-align: baseline;
+  display: inline-block;
+
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+```
+
+1. 选择器 `[class^="el-icon-"]` 和 `[class*=" el-icon-"]` 用于选择那些class属性值以 "el-icon-" 开头或包含 " el-icon-" 的HTML元素。
+
+例如这个就被匹配到了：
+
+这个字体图标会应用上如上的字体属性。这里只需要改变 `content` 就可以了。
+
+```css
+.el-icon-ice-cream-round:before {
+  content: "\e6a0";
+}
+```
+
+2. font-family: 'element-icons' !important; 这一行强制定义了这些被选中的元素应该使用的字体家族，这里是 'element-icons'。使用 !important 是为了保证这个样式规则的优先级高于其他可能冲突的样式规则。
+
+3. speak: none; 告诉浏览器不要为这些图标元素发声读出，因为它们是视觉图标，不需要被读出。
+
+4. font-style: normal; 和 font-weight: normal; 这两行确保了图标的字体样式和粗细都是标准的，没有斜体或加粗效果。
+
+5. font-variant: normal; 这一行保持了字体的小写字母不变，不进行任何特殊的字体变化。
+
+6. text-transform: none; 这一行确保文本不会被转换成大写或小写，保持原有样式。
+
+7. line-height: 1; 这一行设置了行高为1，意味着图标的高度就是它的字体大小，这样可以确保图标不会占据额外的垂直空间。
+
+8. vertical-align: baseline; 这一行将图标垂直对齐到基线，这样图标就会和周围的文本元素对齐得很好。
+
+9. display: inline-block; 这一行让图标表现得像一个内联元素，但它也可以拥有块级元素的属性，比如宽度和高度。
+
+10. -webkit-font-smoothing: antialiased; 和 -moz-osx-font-smoothing: grayscale; 这两行是为了在不同的浏览器和操作系统上提供更平滑的字体渲染效果，使得图标看起来更加清晰。
+
+
+完整代码如下：
 
 ```css
 @import "common/var"; // 引入变量
@@ -2247,3 +2332,280 @@ $--breakpoints-spec: (
 }
 
 ```
+
+### 从一个基础按钮组件开始分析
+
+button.scss
+
+```scss
+@charset "UTF-8";
+@import "common/var";
+@import "mixins/button";
+@import "mixins/mixins";
+@import "mixins/utils";
+
+@include b(button) {
+  display: inline-block;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  background: $--button-default-background-color;
+  border: $--border-base;
+  border-color: $--button-default-border-color;
+  color: $--button-default-font-color;
+  -webkit-appearance: none;
+  text-align: center;
+  box-sizing: border-box;
+  outline: none;
+  margin: 0;
+  transition: .1s;
+  font-weight: $--button-font-weight;
+  @include utils-user-select(none);
+  & + & {
+    margin-left: 10px;
+  }
+
+  @include button-size($--button-padding-vertical, $--button-padding-horizontal, $--button-font-size, $--button-border-radius);
+
+  &:hover,
+  &:focus {
+    color: $--color-primary;
+    border-color: $--color-primary-light-7;
+    background-color: $--color-primary-light-9;
+  }
+
+  &:active {
+    color: mix($--color-black, $--color-primary, $--button-active-shade-percent);
+    border-color: mix($--color-black, $--color-primary, $--button-active-shade-percent);
+    outline: none;
+  }
+
+  &::-moz-focus-inner {
+    border: 0;
+  }
+
+  & [class*="el-icon-"] {
+    & + span {
+      margin-left: 5px;
+    }
+  }
+
+  @include when(plain) {
+    &:hover,
+    &:focus {
+      background: $--color-white;
+      border-color: $--color-primary;
+      color: $--color-primary;
+    }
+
+    &:active {
+      background: $--color-white;
+      border-color: mix($--color-black, $--color-primary, $--button-active-shade-percent);
+      color: mix($--color-black, $--color-primary, $--button-active-shade-percent);
+      outline: none;
+    }
+  }
+
+  @include when(active) {
+    color: mix($--color-black, $--color-primary, $--button-active-shade-percent);
+    border-color: mix($--color-black, $--color-primary, $--button-active-shade-percent);
+  }
+
+  @include when(disabled) {
+    &,
+    &:hover,
+    &:focus {
+      color: $--button-disabled-font-color;
+      cursor: not-allowed;
+      background-image: none;
+      background-color: $--button-disabled-background-color;
+      border-color: $--button-disabled-border-color;
+    }
+
+    &.el-button--text {
+      background-color: transparent;
+    }
+
+    &.is-plain {
+      &,
+      &:hover,
+      &:focus {
+        background-color: $--color-white;
+        border-color: $--button-disabled-border-color;
+        color: $--button-disabled-font-color;
+      }
+    }
+  }
+
+  @include when(loading) {
+    position: relative;
+    pointer-events: none;
+
+    &:before {
+      pointer-events: none;
+      content: '';
+      position: absolute;
+      left: -1px;
+      top: -1px;
+      right: -1px;
+      bottom: -1px;
+      border-radius: inherit;
+      background-color: rgba(255,255,255,.35);
+    }
+  }
+  @include when(round) {
+    border-radius: 20px;
+    padding: 12px 23px;
+  }
+  @include when(circle) {
+    border-radius: 50%;
+    padding: $--button-padding-vertical;
+  }
+  @include m(primary) {
+    @include button-variant($--button-primary-font-color, $--button-primary-background-color, $--button-primary-border-color);
+  }
+  @include m(success) {
+    @include button-variant($--button-success-font-color, $--button-success-background-color, $--button-success-border-color);
+  }
+  @include m(warning) {
+    @include button-variant($--button-warning-font-color, $--button-warning-background-color, $--button-warning-border-color);
+  }
+  @include m(danger) {
+    @include button-variant($--button-danger-font-color, $--button-danger-background-color, $--button-danger-border-color);
+  }
+  @include m(info) {
+    @include button-variant($--button-info-font-color, $--button-info-background-color, $--button-info-border-color);
+  }
+  @include m(medium) {
+    @include button-size($--button-medium-padding-vertical, $--button-medium-padding-horizontal, $--button-medium-font-size, $--button-medium-border-radius);
+    @include when(circle) {
+      padding: $--button-medium-padding-vertical;
+    }
+  }
+  @include m(small) {
+    @include button-size($--button-small-padding-vertical, $--button-small-padding-horizontal, $--button-small-font-size, $--button-small-border-radius);
+    @include when(circle) {
+      padding: $--button-small-padding-vertical;
+    }
+  }
+  @include m(mini) {
+    @include button-size($--button-mini-padding-vertical, $--button-mini-padding-horizontal, $--button-mini-font-size, $--button-mini-border-radius);
+    @include when(circle) {
+      padding: $--button-mini-padding-vertical;
+    }
+  }
+  @include m(text) {
+    border-color: transparent;
+    color: $--color-primary;
+    background: transparent;
+    padding-left: 0;
+    padding-right: 0;
+
+    &:hover,
+    &:focus {
+      color: mix($--color-white, $--color-primary, $--button-hover-tint-percent);
+      border-color: transparent;
+      background-color: transparent;
+    }
+    &:active {
+      color: mix($--color-black, $--color-primary, $--button-active-shade-percent);
+      border-color: transparent;
+      background-color: transparent;
+    }
+
+    &.is-disabled,
+    &.is-disabled:hover,
+    &.is-disabled:focus {
+      border-color: transparent;
+    }
+  }
+}
+
+@include b(button-group) {
+  @include utils-clearfix;
+  display: inline-block;
+  vertical-align: middle;
+
+  & > .el-button {
+    float: left;
+    position: relative;
+    & + .el-button {
+      margin-left: 0;
+    }
+    &.is-disabled {
+      z-index: 1;
+    }
+    &:first-child {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+    &:last-child {
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+    }
+    &:first-child:last-child {
+      border-top-right-radius: $--button-border-radius;
+      border-bottom-right-radius: $--button-border-radius;
+      border-top-left-radius: $--button-border-radius;
+      border-bottom-left-radius: $--button-border-radius;
+
+      &.is-round {
+        border-radius: 20px;
+      }
+
+      &.is-circle {
+        border-radius: 50%;
+      }
+    }
+    &:not(:first-child):not(:last-child) {
+      border-radius: 0;
+    }
+    &:not(:last-child) {
+      margin-right: -1px;
+    }
+
+    &:not(.is-disabled) {
+      &:hover,
+      &:focus,
+      &:active {
+        z-index: 1;
+      }
+    }
+
+    @include when(active) {
+      z-index: 1;
+    }
+  }
+  
+  & > .el-dropdown {
+    & > .el-button {
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+      border-left-color: rgba($--color-white, 0.5);
+    }
+  }
+
+  @each $type in (primary, success, warning, danger, info) {
+    .el-button--#{$type} {
+      &:first-child {
+        border-right-color: rgba($--color-white, 0.5);
+      }
+      &:last-child {
+        border-left-color: rgba($--color-white, 0.5);
+      }
+      &:not(:first-child):not(:last-child) {
+        border-left-color: rgba($--color-white, 0.5);
+        border-right-color: rgba($--color-white, 0.5);
+      }
+    }
+  }
+}
+```
+
+## Vue.js
+
+
+## gulp
+
+
+## TypeScript
