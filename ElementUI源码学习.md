@@ -2341,7 +2341,8 @@ button.scss
 
 我在看到 mixin 中定义了一个 `_button.scss` 文件, 这是 Element-ui 其它组件可没有的待遇
 
-![mixin](https://pic.imgdb.cn/item/6603e7579f345e8d0392b9df.png)
+[mixin]!
+(https://pic.imgdb.cn/item/6603e7579f345e8d0392b9df.png)
 
 文件前缀 `_` 的含义如下：
 
