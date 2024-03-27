@@ -1,4 +1,8 @@
-## !default;
+## Sass
+
+Element-ui 的源码中使用到了很多高级的 Sass 语法
+
+### !default
 
 在读到 Element-ui 的 var.scss 文件的时候，看到定义了许多的变量，其中 !default 在多处使用
 
@@ -8,6 +12,8 @@
 
 举个例子：
 
+
+```css
 // 定义一个变量，并给它一个默认值
 $--color-primary: #409EFF !default;
 
@@ -18,6 +24,9 @@ $--color-primary: #123456;
 body {
   background-color: $--color-primary;
 }
+```
+
+
 在这个例子中，即使我们给$--color-primary赋予了一个新的值#123456，!default声明的默认值#409EFF也不会生效，因为在当前作用域中变量已经被定义了。如果我们没有在其他地方定义$--color-primary，那么它将使用!default指定的默认值#409EFF。
 
 这种方式提供了一种安全的方式来设置变量的默认值，确保即使在用户忘记定义某个变量的情况下，样式也不会因为找不到变量而出错。同时，它也为用户提供了足够的灵活性来自定义样式。
