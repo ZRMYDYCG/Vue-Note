@@ -2757,7 +2757,7 @@ color: map-get($my-map, primary); // 返回 #ff0000
 }
 ```
 
-上面的代码会生成以下 CSS：
+上面的代码会生成以下 CSS:
 
 ```css
 .primary-text {
@@ -2798,6 +2798,223 @@ BEM（Block Element Modifier）是一种 CSS 方法论，用于创建可重用�
 
 接下来看到 mixin 的 BEM 具体实现：
 
+```css
+@import "function";
+@import "../common/var";
+
+/* Break-points
+ -------------------------- */
+@mixin res($key, $map: $--breakpoints) {
+  // 循环断点Map，如果存在则返回
+  @if map-has-key($map, $key) {
+    @media only screen and #{inspect(map-get($map, $key))} {
+      @content;
+    }
+  } @else {
+    @warn "Undefeined points: `#{$map}`";
+  }
+}
+
+/* Scrollbar
+ -------------------------- */
+@mixin scroll-bar {
+  $--scrollbar-thumb-background: #b4bccc;
+  $--scrollbar-track-background: #fff;
+
+  &::-webkit-scrollbar {
+    z-index: 11;
+    width: 6px;
+
+    &:horizontal {
+      height: 6px;
+    }
+
+    &-thumb {
+      border-radius: 5px;
+      width: 6px;
+      background: $--scrollbar-thumb-background;
+    }
+
+    &-corner {
+      background: $--scrollbar-track-background;
+    }
+
+    &-track {
+      background: $--scrollbar-track-background;
+
+      &-piece {
+        background: $--scrollbar-track-background;
+        width: 6px;
+      }
+    }
+  }
+}
+
+/* Placeholder
+ -------------------------- */
+@mixin placeholder {
+  &::-webkit-input-placeholder {
+    @content
+  }
+
+  &::-moz-placeholder {
+    @content
+  }
+
+  &:-ms-input-placeholder {
+    @content
+  }
+}
+
+/* BEM
+ -------------------------- */
+@mixin b($block) {
+  $B: $namespace+'-'+$block !global;
+
+  .#{$B} {
+    @content;
+  }
+}
+
+@mixin e($element) {
+  $E: $element !global;
+  $selector: &;
+  $currentSelector: "";
+  @each $unit in $element {
+    $currentSelector: #{$currentSelector + "." + $B + $element-separator + $unit + ","};
+  }
+
+  @if hitAllSpecialNestRule($selector) {
+    @at-root {
+      #{$selector} {
+        #{$currentSelector} {
+          @content;
+        }
+      }
+    }
+  } @else {
+    @at-root {
+      #{$currentSelector} {
+        @content;
+      }
+    }
+  }
+}
+
+@mixin m($modifier) {
+  $selector: &;
+  $currentSelector: "";
+  @each $unit in $modifier {
+    $currentSelector: #{$currentSelector + & + $modifier-separator + $unit + ","};
+  }
+
+  @at-root {
+    #{$currentSelector} {
+      @content;
+    }
+  }
+}
+
+@mixin configurable-m($modifier, $E-flag: false) {
+  $selector: &;
+  $interpolation: '';
+
+  @if $E-flag {
+    $interpolation: $element-separator + $E-flag;
+  }
+
+  @at-root {
+    #{$selector} {
+      .#{$B+$interpolation+$modifier-separator+$modifier} {
+        @content;
+      }
+    }
+  }
+}
+
+@mixin spec-selector($specSelector: '', $element: $E, $modifier: false, $block: $B) {
+  $modifierCombo: '';
+
+  @if $modifier {
+    $modifierCombo: $modifier-separator + $modifier;
+  }
+
+  @at-root {
+    #{&}#{$specSelector}.#{$block+$element-separator+$element+$modifierCombo} {
+      @content
+    }
+  }
+}
+
+@mixin meb($modifier: false, $element: $E, $block: $B) {
+  $selector: &;
+  $modifierCombo: '';
+
+  @if $modifier {
+    $modifierCombo: $modifier-separator + $modifier;
+  }
+
+  @at-root {
+    #{$selector} {
+      .#{$block+$element-separator+$element+$modifierCombo} {
+        @content
+      }
+    }
+  }
+}
+
+@mixin when($state) {
+  @at-root {
+    &.#{$state-prefix + $state} {
+      @content;
+    }
+  }
+}
+
+@mixin extend-rule($name) {
+  @extend #{'%shared-'+$name};
+}
+
+@mixin share-rule($name) {
+  $rule-name: '%shared-'+$name;
+
+  @at-root #{$rule-name} {
+    @content
+  }
+}
+
+@mixin pseudo($pseudo) {
+  @at-root #{&}#{':#{$pseudo}'} {
+    @content
+  }
+}
+```
+
+可以将这些实现 BEM 的 mixin 当作是一套工具，其实就是用来帮助我们更加容易可以去写出符合 BEM 规范的 CSS 代码。
+
+先看第一个：
+
+```css
+@mixin b($block) {
+  $B: $namespace+'-'+$block !global;
+
+  .#{$B} {
+    @content;
+  }
+}
+```
+
+这是实现`BEM`命名约定中的“块”层次
+
+`b` 是这个混入的名称, 其可以接受一个参数, 这个参数代表的就是你想要定义的 `CSS` 类名的 “块” 部分，比如按钮(`button`)、卡片(`Card`)
+
+`$B`: $namespace + '-' + $block !global; 对 $B 进行了变量的赋值，其中 $namespace 的变量值为 el, 因此当用户传入值时, 比如 button , 那么就会拼接成 el-button
+
+`!global` 使得该变量是全局的, 即使在混合内部定义, 也可以在混合外部被访问和修改
+
+`#{$B}` 使用 scss 特有的字符串插值特性来生成 CSS 类选择器, 这个 $B 就包含了类名的 “块” 部分
+
+`@content` 是 scss 中的一个特殊的占位符, 它会允许你在混合中定义一个可插入的样式规则, 当调用这个 b 混合时, 就可以进行样式代码的提供, 这些样式代码将会替换 @conten, 并且插入到生成的这个选择器中去。
 
 ## Vue.js
 
