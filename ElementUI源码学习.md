@@ -2341,8 +2341,7 @@ button.scss
 
 我在看到 mixin 中定义了一个 `_button.scss` 文件, 这是 Element-ui 其它组件可没有的待遇
 
-[mixin]!
-(https://pic.imgdb.cn/item/6603e7579f345e8d0392b9df.png)
+![](https://pic.imgdb.cn/item/6603e7579f345e8d0392b9df.png)
 
 文件前缀 `_` 的含义如下：
 
@@ -2362,6 +2361,7 @@ button.scss
 
 这种使用下划线命名部分文件的做法有助于保持项目结构的清晰和组织，使得其他前端开发者能够很容易地理解哪些文件是用于被导入和重用的，哪些文件是最终生成CSS的文件。
 
+继续看，发现其导入了很多 mixin，糟糕，看来不懂 mixin 是很难去读懂组件样式的，因此切换到去读懂 mixin 文件夹里面的 scss 文件
 
 完整样式代码如下：
 
@@ -2604,7 +2604,7 @@ button.scss
       z-index: 1;
     }
   }
-  
+
   & > .el-dropdown {
     & > .el-button {
       border-top-left-radius: 0;
@@ -2629,6 +2629,175 @@ button.scss
   }
 }
 ```
+
+### mixins 中的文件解读
+
+一共是这样几个
+
+```sh
+mixins
+  - _button.scss
+  - config.scss
+  - function.scss
+  - mixins.scss
+  - utils.scss
+```
+
+`config.scss`
+
+这里进行了一些配置
+
+这些变量在 Element UI 的源码中非常重要，因为它们定义了组件的类名结构。
+
+```scss
+$namespace: 'el';
+$element-separator: '__';
+$modifier-separator: '--';
+$state-prefix: 'is-';
+```
+
+1. $namespace: 'el';
+
+这个变量定义了 Element UI 组件的基础命名空间。在 CSS 中，这个命名空间会被用作组件类名的前缀。例如，如果你有一个按钮组件，它的类名可能会是 el-button。这样做的好处是可以帮助避免全局命名冲突，同时提供了一个清晰的、与 Element UI 相关的样式作用域。
+
+2. $element-separator: '__';
+这个变量定义了 Element UI 组件内部元素的分隔符。在 Element UI 的类名中，当你需要表示一个组件内部的子元素时，你会使用这个分隔符。例如，如果你有一个带有图标的按钮，图标部分的类名可能会是 el-button__icon。这样的命名方式有助于区分组件的不同部分，并且使得组件的结构更加清晰。
+
+3. $modifier-separator: '--';
+这个变量定义了 Element UI 组件修饰符（modifier）的分隔符。修饰符用于改变组件的样式或行为。例如，如果你想要一个圆角按钮，你可能会使用 el-button--circle。这里的 -- 就是修饰符分隔符，它将修饰符与组件的基础类名分开。
+
+4. $state-prefix: 'is-';
+这个变量定义了 Element UI 组件状态前缀。状态类用于表示组件的不同状态，比如禁用状态、激活状态等。例如，如果一个按钮是禁用的，它的类名可能会包含 is-disabled。这个前缀 is- 有助于快速识别状态相关的类名，并且保持了命名的一致性。
+
+`function.scss`
+
+可以看到该函数的描述是 `BEM support Func`，那么什么是BEM呢？
+
+[点击阅读官网](https://en.bem.info/methodology/quick-star)
+
+```css
+@import "config";
+
+/* BEM support Func
+ -------------------------- */
+@function selectorToString($selector) {
+  $selector: inspect($selector);
+  $selector: str-slice($selector, 2, -2);
+  @return $selector;
+}
+
+@function containsModifier($selector) {
+  $selector: selectorToString($selector);
+
+  @if str-index($selector, $modifier-separator) {
+    @return true;
+  } @else {
+    @return false;
+  }
+}
+
+@function containWhenFlag($selector) {
+  $selector: selectorToString($selector);
+
+  @if str-index($selector, '.' + $state-prefix) {
+    @return true
+  } @else {
+    @return false
+  }
+}
+
+@function containPseudoClass($selector) {
+  $selector: selectorToString($selector);
+
+  @if str-index($selector, ':') {
+    @return true
+  } @else {
+    @return false
+  }
+}
+
+@function hitAllSpecialNestRule($selector) {
+
+  @return containsModifier($selector) or containWhenFlag($selector) or containPseudoClass($selector);
+}
+```
+
+理解这个函数的关键就是知道 `inspect` 是什么？
+
+在其它的文件中，以及这个函数文件中，并没有对该函数进行调用，因此这应该是 scss 内置的一个函数，于是来到官网，[点击查看 inspect 这个语法点](https://www.sass.hk/docs/)
+
+![果然被我找到了](https://pic.imgdb.cn/item/660407e69f345e8d03812814.png)
+
+> Maps represent an association between keys and values, where keys are used to look up values. They make it easy to collect values into named groups and access those groups dynamically. They have no direct parallel in CSS, although they’re syntactically similar to media query expressions: scss $map: (key1: value1, key2: value2, key3: value3); Unlike lists, maps must always be surrounded by parentheses and must always be comma-separated. Both the keys and values in maps can be any SassScript object. A map may only have one value associated with a given key (although that value may be a list). A given value may be associated with many keys, though. Like lists, maps are mostly manipulated using SassScript functions. The map-get function looks up values in a map and the map-merge function adds values to a map. The @each directive can be used to add styles for each key/value pair in a map. The order of pairs in a map is always the same as when the map was created. Maps can also be used anywhere lists can. When used by a list function, a map is treated as a list of pairs. For example, (key1: value1, key2: value2) would be treated as the nested list key1 value1, key2 value2 by list functions. Lists cannot be treated as maps, though, with the exception of the empty list. () represents both a map with no key/value pairs and a list with no elements. Note that map keys can be any Sass data type (even another map) and the syntax for declaring a map allows arbitrary SassScript expressions that will be evaluated to determine the key. Maps cannot be converted to plain CSS. Using one as the value of a variable or an argument to a CSS function will cause an error. Use the inspect($value) function to produce an output string useful for debugging maps.
+
+翻译：
+
+在 Sass 中，映射（Maps）表示键（keys）和值（values）之间的关联，其中键用于查找值。映射使得将值收集到命名的组中并动态访问这些组变得非常容易。尽管它们在语法上与 CSS 的媒体查询表达式相似，但映射在 CSS 中没有直接对应的概念：
+
+```scss
+$map: (key1: value1, key2: value2, key3: value3);
+```
+
+与列表（lists）不同，映射必须始终用括号包围，并且必须用逗号分隔。映射中的键和值可以是任何 SassScript 对象。一个映射对于给定的键只能有一个关联的值（尽管该值可以是一个列表）。然而，一个给定的值可以与多个键关联。
+
+与列表类似，映射主要通过 SassScript 函数进行操作。`map-get` 函数用于在映射中查找值，而 `map-merge` 函数用于向映射添加值。`@each` 指令可以用来为映射中的每个键/值对添加样式。映射中的键值对的顺序始终与创建映射时的顺序相同。映射还可以在任何列表可以被使用的地方使用。当映射被列表函数使用时，它会被视为键值对的嵌套列表。例如，`(key1: value1, key2: value2)` 会被列表函数视为嵌套列表 `key1 value1, key2 value2`。然而，列表不能被视为映射，例外的是空列表。`()` 既表示没有键值对的映射，也表示没有元素的列表。
+
+需要注意的是，映射的键可以是任何 Sass 数据类型（甚至是另一个映射），并且声明映射的语法允许使用任意的 SassScript 表达式，这些表达式将被求值以确定键。映射不能转换为纯 CSS。将映射用作变量的值或 CSS 函数的参数将导致错误。使用 `inspect($value)` 函数可以产生用于调试映射的输出字符串。
+
+```scss
+// 示例：使用 map-get 函数获取映射中的值
+$my-map: (primary: #ff0000, secondary: #00ff00, tertiary: #0000ff);
+color: map-get($my-map, primary); // 返回 #ff0000
+
+// 示例：使用 @each 指令遍历映射
+@each $key, $value in $my-map {
+  .#{$key}-text {
+    color: $value;
+  }
+}
+```
+
+上面的代码会生成以下 CSS：
+
+```css
+.primary-text {
+  color: #ff0000;
+}
+.secondary-text {
+  color: #00ff00;
+}
+.tertiary-text {
+  color: #0000ff;
+}
+```
+
+如上展示了如何使用 `@each` 指令遍历映射并生成对应的 CSS 类。
+
+接下来对这些函数进行一个深入的学习，看他是如何来支持 BEM 的：
+
+BEM（Block Element Modifier）是一种 CSS 方法论，用于创建可重用、可维护的样式表。它通过将页面元素分为不同的块（Blocks）、元素（Elements）和修饰符（Modifiers），来组织和命名 CSS 类。这种方法有助于避免类名冲突，提高代码的可读性和可维护性。
+
+`function.scss` 文件中，定义了几个函数，这些函数用于处理和检查 CSS 选择器，以支持 BEM 方法论。
+
+1. `@function selectorToString($selector)`:
+   这个函数接收一个选择器作为参数，并将其转换为字符串格式。它使用 `inspect` 函数来获取参数的字符串表示，然后使用 `str-slice` 函数去除选择器字符串首尾的括号。这个函数是其他函数的基础，因为它将选择器处理成字符串，以便进行后续的字符串操作。
+
+2. `@function containsModifier($selector)`:
+   此函数检查给定的选择器是否包含 BEM 修饰符分隔符（通常是 `--`）。它调用 `selectorToString` 函数将选择器转换为字符串，然后使用 `str-index` 函数查找字符串中是否包含修饰符分隔符。如果找到，函数返回 `true`，表示选择器包含修饰符；否则返回 `false`。
+
+3. `@function containWhenFlag($selector)`:
+   这个函数用于检查选择器是否包含 BEM 状态前缀（通常是 `is-`）。它同样调用 `selectorToString` 函数处理选择器，然后使用 `str-index` 函数查找字符串中是否包含状态前缀。如果包含，返回 `true`；否则返回 `false`。
+
+4. `@function containPseudoClass($selector)`:
+   此函数检查选择器是否包含伪类。它通过查找选择器字符串中是否包含冒号（`:`）来判断。如果包含伪类，返回 `true`；否则返回 `false`。
+
+5. `@function hitAllSpecialNestRule($selector)`:
+   这个函数是一个组合检查，用于判断选择器是否包含任何特殊的嵌套规则，包括修饰符、状态标志或伪类。它通过组合调用前面定义的三个函数 `containsModifier`、`containWhenFlag` 和 `containPseudoClass` 来实现。如果选择器包含这三者中的任何一个，函数返回 `true`；否则返回 `false`。
+
+这些函数的目的是为了在编写 CSS 时支持 BEM 方法论，帮助开发者识别和管理 BEM 类名中的特定模式。通过这些函数，可以更容易地编写符合 BEM 规范的样式，从而提高 CSS 代码的组织性和可维护性。
+
+接下来看到 mixin 的 BEM 具体实现：
+
 
 ## Vue.js
 
